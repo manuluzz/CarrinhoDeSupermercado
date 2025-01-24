@@ -1,126 +1,61 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_blue/flutter_blue.dart';
+import 'bluetooth_service.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BluetoothScreen extends StatefulWidget {
+  const BluetoothScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter BLE Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Conexão BLE com ESP32'),
-    );
-  }
+  State<BluetoothScreen> createState() => _MyBluetoothScreenState();
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  FlutterBlue flutterBlue = FlutterBlue.instance;
-  BluetoothDevice? _connectedDevice;
-  BluetoothCharacteristic? _readCharacteristic;
+class _MyBluetoothScreenState extends State<BluetoothScreen> {
+  final MyBluetoothService _bluetoothService = MyBluetoothService();
   String _receivedData = "Nenhum dado recebido.";
   bool _isScanning = false;
 
-  void _startScan() async {
-  setState(() {
-    _isScanning = true;
-  });
+  @override
+  void initState() {
+    super.initState();
+    _bluetoothService.onDataReceived = (data) {
+      setState(() {
+        _receivedData = data;
+      });
+    };
+  }
 
-  try {
-    final scanResults = await flutterBlue.startScan(timeout: const Duration(seconds: 5));
-    for (var scanResult in scanResults) {
-      if (scanResult.device.name == "BalancaESP32") {
-        await flutterBlue.stopScan();
-        _connectToDevice(scanResult.device);
-        break;
-      }
-    }
-  } finally {
+  @override
+  void dispose() {
+    _bluetoothService.disconnect();
+    super.dispose();
+  }
+
+  void _startScan() async {
+    setState(() {
+      _isScanning = true;
+    });
+    await _bluetoothService.scanAndConnect();
     setState(() {
       _isScanning = false;
     });
   }
-}
 
-  Future<void> _connectToDevice(BluetoothDevice device) async {
-    try {
-      await device.connect();
-      setState(() {
-        _connectedDevice = device;
-      });
-
-      List<BluetoothService> services = await device.discoverServices();
-      for (var service in services) {
-        for (var characteristic in service.characteristics) {
-          if (characteristic.properties.read) {
-            _readCharacteristic = characteristic;
-            _readData();
-          }
-        }
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Conectado ao ESP32 com sucesso!")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro ao conectar: $e")),
-      );
-    }
-  }
-
-  Future<void> _readData() async {
-    if (_readCharacteristic != null) {
-      _readCharacteristic?.value.listen((value) {
-        setState(() {
-          _receivedData = String.fromCharCodes(value).trim();
-        });
-      });
-    }
-  }
-
-  void _disconnectFromDevice() async {
-    if (_connectedDevice != null) {
-      await _connectedDevice!.disconnect();
-      setState(() {
-        _connectedDevice = null;
-        _readCharacteristic = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Desconectado do dispositivo.")),
-      );
-    }
+  void _disconnect() {
+    _bluetoothService.disconnect();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: const Text('Conexão BLE com ESP32'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+          children: [
             Text(
-              'Status: ${_connectedDevice != null ? "Conectado" : "Desconectado"}',
+              'Status: ${_bluetoothService.isConnected ? "Conectado" : "Desconectado"}',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 20),
@@ -130,18 +65,19 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Text(
               _receivedData,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: Colors.blueAccent,
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(color: Colors.blueAccent),
             ),
             const SizedBox(height: 40),
             ElevatedButton(
-              onPressed: _connectedDevice == null ? _startScan : null,
+              onPressed: !_bluetoothService.isConnected ? _startScan : null,
               child: Text(_isScanning ? 'Procurando...' : 'Conectar ao ESP32'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _connectedDevice != null ? _disconnectFromDevice : null,
+              onPressed: _bluetoothService.isConnected ? _disconnect : null,
               child: const Text('Desconectar'),
             ),
           ],

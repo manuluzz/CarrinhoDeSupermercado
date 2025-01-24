@@ -1,6 +1,7 @@
 // pdv_screen.dart
+import 'package:carrinhodesupermercado/bluetooth_service.dart';
 import 'package:flutter/material.dart';
-
+import 'package:carrinhodesupermercado/tela_pesagem.dart';
 class PDVScreen extends StatefulWidget {
   const PDVScreen({Key? key}) : super(key: key);
 
@@ -123,15 +124,26 @@ class _PDVScreenState extends State<PDVScreen> {
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.shopping_cart),
-                  title: const Text('Finalizar Compra'),
-                  onTap: _finalizePurchase,
-                ),
-                ListTile(
                   leading: const Icon(Icons.qr_code_scanner),
                   title: const Text('Escanear Produto'),
                   onTap: _scanProduct,
                 ),
+                ListTile(
+                  leading: const Icon(Icons.balance),
+                  title: const Text('Pesar Produto'),
+                  onTap: (){
+                    Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const BluetoothScreen()),
+  );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.shopping_cart),
+                  title: const Text('Finalizar Compra'),
+                  onTap: _finalizePurchase,
+                ),
+                
               ],
             ),
           ),
