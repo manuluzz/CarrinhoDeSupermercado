@@ -1,9 +1,11 @@
 // pdv_screen.dart
-import 'package:carrinhodesupermercado/bluetooth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:carrinhodesupermercado/tela_pesagem.dart';
+
 class PDVScreen extends StatefulWidget {
-  const PDVScreen({Key? key}) : super(key: key);
+  final String clientName;
+
+  const PDVScreen({Key? key, required this.clientName}) : super(key: key);
 
   @override
   State<PDVScreen> createState() => _PDVScreenState();
@@ -102,23 +104,28 @@ class _PDVScreenState extends State<PDVScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PDV - Caixa'),
-        backgroundColor: Colors.green,
+        title: Text('Bem-vindo ao Supermercado Online.',
+        style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24.0,
+                    )
+        ),
+        backgroundColor: Colors.blue.shade700,
       ),
       body: Row(
         children: [
           // Menu lateral fixo
           Container(
             width: 250,
-            color: Colors.green[50],
+            color: Colors.blue.shade100,
             child: ListView(
               children: [
-                const DrawerHeader(
-                  decoration: BoxDecoration(color: Colors.green),
+                 DrawerHeader(
+                  decoration: BoxDecoration(color: Colors.blue.shade100),
                   child: Text(
-                    'Menu PDV',
+                    'Boas compras, ${widget.clientName}!',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 24.0,
                     ),
                   ),
