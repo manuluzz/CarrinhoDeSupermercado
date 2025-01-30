@@ -15,7 +15,7 @@ class _ChatAssistantState extends State<ChatAssistant> {
 
 Future<String> fetchResponse(String message) async {
   const String apiUrl = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1";
-  const String apiKey = "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"; // Substitua pelo seu token válido
+  const String apiKey = ""; // Substitua pelo seu token válido
 
 int maxRetries = 3;
   int retryDelay = 2000; // 2 segundos
