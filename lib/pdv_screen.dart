@@ -1,6 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:carrinhodesupermercado/tela_pesagem.dart';
 import 'package:carrinhodesupermercado/assistente_screen.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
+Map<String, String> productImages = {
+  "123456": "https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png",
+  "789012": "https://example.com/produto2.jpg",
+  "345678": "https://example.com/produto3.jpg",
+};
+
+Future<String?> downloadAndSaveImage(String imageUrl, String fileName) async {
+  try {
+    final response = await http.get(Uri.parse(imageUrl));
+
+    if (response.statusCode == 200) {
+      final Directory directory = await getApplicationDocumentsDirectory();
+      final String filePath = '${directory.path}/$fileName';
+      final File file = File(filePath);
+      await file.writeAsBytes(response.bodyBytes);
+
+      return filePath; // Retorna o caminho salvo
+    } else {
+      print("Erro ao baixar a imagem: ${response.statusCode}");
+      return null;
+    }
+  } catch (e) {
+    print("Erro na requisição: $e");
+    return null;
+  }
+}
 
 class PDVScreen extends StatefulWidget {
   final String clientName;
@@ -40,48 +70,53 @@ class _PDVScreenState extends State<PDVScreen> {
     return false; // Bloqueia a ação de voltar
   }
 
-  void _scanProduct() { // Abre um pop-up para inserir o código de barras
-    showDialog(
-      context: context,
-      builder: (context) {
-        final TextEditingController barcodeController = TextEditingController();
-        return AlertDialog(
-          title: const Text('Escanear Produto'),
-          content: TextField(
-            controller: barcodeController,
-            decoration: const InputDecoration(
-              labelText: 'Código de Barras',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
+ void _scanProduct() {
+  showDialog(
+    context: context,
+    builder: (context) {
+      final TextEditingController barcodeController = TextEditingController();
+      return AlertDialog(
+        title: const Text('Escanear Produto'),
+        content: TextField(
+          controller: barcodeController,
+          decoration: const InputDecoration(
+            labelText: 'Código de Barras',
+            border: OutlineInputBorder(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Fecha o pop-up sem fazer nada
-              },
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Simula a leitura do produto usando o código de barras digitado
-                setState(() {
-                  _products.add({
-                    'description': 'Produto Exemplo - Código ${barcodeController.text}',
-                    'weight': '1.5 kg',
-                    'quantity': 1,
-                    'price': 12.99,
-                  });
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Fecha o pop-up
+            },
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              String barcode = barcodeController.text;
+              String imageUrl = "https://exemplo.com/imagem_$barcode.jpg"; // Troque para a API real
+              String? localPath = await downloadAndSaveImage(imageUrl, "$barcode.jpg");
+
+              setState(() {
+                _products.add({
+                  'description': 'Produto - Código $barcode',
+                  'weight': '1.5 kg',
+                  'quantity': 1,
+                  'price': 12.99,
+                  'imagePath': localPath, // Adiciona o caminho da imagem salva
                 });
-                Navigator.of(context).pop(); // Fecha o pop-up
-              },
-              child: const Text('Confirmar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+              });
+
+              Navigator.of(context).pop();
+            },
+            child: const Text('Confirmar'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   void _finalizePurchase() {
     // Verifica se há produtos no carrinho antes de finalizar
@@ -180,7 +215,7 @@ class _PDVScreenState extends State<PDVScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const AssistenteScreen()),
+                            builder: (context) => ChatAssistant()),
                       );
                     },
                   ),
@@ -206,27 +241,30 @@ class _PDVScreenState extends State<PDVScreen> {
                     const SizedBox(height: 10.0),
                     Expanded(
                       child: ListView.builder(
-                        itemCount: _products.length,
-                        itemBuilder: (context, index) {
-                          final product = _products[index];
-                          return Card(
-                            child: ListTile(
-                              title: Text(product['description']),
-                              subtitle: Text(
-                                'Peso: ${product['weight']} | Quantidade: ${product['quantity']}\nPreço: R\$ ${product['price'].toStringAsFixed(2)}',
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    _products.removeAt(index);
-                                  });
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+  itemCount: _products.length,
+  itemBuilder: (context, index) {
+    final product = _products[index];
+    return Card(
+      child: ListTile(
+        leading: product['imagePath'] != null
+            ? Image.file(File(product['imagePath']), width: 50, height: 50, fit: BoxFit.cover)
+            : Icon(Icons.image_not_supported, color: Colors.red),
+        title: Text(product['description']),
+        subtitle: Text(
+          'Peso: ${product['weight']} | Quantidade: ${product['quantity']}\nPreço: R\$ ${product['price'].toStringAsFixed(2)}',
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            setState(() {
+              _products.removeAt(index);
+            });
+          },
+        ),
+      ),
+    );
+  },
+)
                     ),
                     if (_products.isNotEmpty) ...[
                       const Divider(),

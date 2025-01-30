@@ -1,8 +1,10 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:carrinhodesupermercado/login_screen.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 
 void main() {
+  Gemini.init(apiKey: 'AIzaSyDIvtbbNCCx4iV0Dparf4qlDxpXnGFBDH8', enableDebugging: true);
   runApp(SupermarketApp());
 }
 

@@ -31,30 +31,34 @@ class _LoginScreenState extends State<LoginScreen> {
     return (numbers[9] == firstDigit && numbers[10] == secondDigit) ? null : "CPF inválido.";
   }
 
-  void _onLoginPressed() {
-    String name = _nameController.text.trim();
-    String cpf = _cpfController.text.trim();
+  void _onLoginPressed() async {
+  String name = _nameController.text.trim();
+  String cpf = _cpfController.text.trim();
 
-    setState(() {
-      _isNameValid = name.isNotEmpty;
-      _isCpfValid = _validateCPF(cpf) == null;
+  setState(() {
+    _isNameValid = name.isNotEmpty;
+    _isCpfValid = _validateCPF(cpf) == null;
+  });
 
-      if (!_isNameValid && !_isCpfValid) {
-        _showErrorDialog("Informe seu nome e CPF.");
-      } else if (!_isNameValid) {
-        _showErrorDialog("Informe seu nome.");
-      } else if (!_isCpfValid) {
-        _showErrorDialog("Informe um CPF válido.");
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PDVScreen(clientName: name),
-          ),
-        );
-      }
-    });
+  if (!_isNameValid || !_isCpfValid) {
+    _showErrorDialog(!_isNameValid
+        ? "Informe seu nome."
+        : "Informe um CPF válido.");
+    return;
   }
+
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => PDVScreen(clientName: name),
+    ),
+  );
+
+  // Limpa os campos quando voltar à tela de login
+  _nameController.clear();
+  _cpfController.clear();
+}
+
 
   void _showErrorDialog(String message) {
     showDialog(

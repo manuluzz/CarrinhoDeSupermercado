@@ -1,130 +1,114 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class AssistenteScreen extends StatefulWidget {
-  const AssistenteScreen({Key? key}) : super(key: key);
-
+class ChatAssistant extends StatefulWidget {
   @override
-  State<AssistenteScreen> createState() => _AssistenteScreenState();
+  _ChatAssistantState createState() => _ChatAssistantState();
 }
 
-class _AssistenteScreenState extends State<AssistenteScreen> {
-  final TextEditingController _questionController = TextEditingController();
-  String _result = '';
-  bool _isLoading = false;
+class _ChatAssistantState extends State<ChatAssistant> {
+  final TextEditingController _controller = TextEditingController();
+  List<Map<String, String>> _messages = [];
+  
+  // Adicione sua chave de API aqui
 
-  final String _apiKey = 'AIzaSyDIvtbbNCCx4iV0Dparf4qlDxpXnGFBDH8'; // Substitua pela sua chave da API do Google AI Studio
-  final String _endpoint = 'https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText';
+Future<String> fetchResponse(String message) async {
+  const String apiUrl = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1";
+  const String apiKey = "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"; // Substitua pelo seu token válido
 
-  Future<void> _getAnswer() async {
-    String query = _questionController.text.trim();
+int maxRetries = 3;
+  int retryDelay = 2000; // 2 segundos
 
-    if (query.isEmpty) {
-      setState(() {
-        _result = "Por favor, insira uma pergunta ou busca.";
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _result = '';
-    });
-
+  for (int attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Construção do corpo da requisição
-      final body = jsonEncode({
-        'prompt': {
-          'text': query,
-        },
-        'temperature': 0.7,  // Ajuste da criatividade
-        'topP': 1.0,         // Alternativa para temperatura
-        'candidateCount': 1, // Quantidade de respostas
-      });
-
-      // Enviar requisição POST
       final response = await http.post(
-        Uri.parse(_endpoint),
+        Uri.parse(apiUrl),
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
+          "Authorization": "Bearer $apiKey",
+          "Content-Type": "application/json",
         },
-        body: body,
+        body: jsonEncode({
+  "inputs": message,
+  "parameters": {
+    "max_length": 500, // Aumenta o tamanho da resposta
+    "temperature": 0.7, // Deixa a resposta mais variada
+    "top_p": 0.9 // Evita respostas muito repetitivas
+  }
+}),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data.containsKey('candidates')) {
-          setState(() {
-            _result = data['candidates'][0]['output'] ?? "Nenhuma resposta encontrada.";
-          });
-        } else {
-          setState(() {
-            _result = "Erro: resposta não encontrada no corpo da API.";
-          });
-        }
+        return data[0]["generated_text"] ?? "Erro na resposta.";
+      } else if (response.statusCode == 503) {
+        print("⚠️ API indisponível. Tentando novamente...");
+        await Future.delayed(Duration(milliseconds: retryDelay));
       } else {
-        setState(() {
-          _result = "Erro ao buscar dados: ${response.statusCode} - ${response.reasonPhrase}";
-        });
+        return "Erro na API: ${response.statusCode} - ${response.body}";
       }
     } catch (e) {
-      setState(() {
-        _result = "Erro de conexão: $e";
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      return "Erro na requisição: $e";
     }
+  }
+  return "Erro: API indisponível após várias tentativas.";
+}
+
+  void _sendMessage() async {
+    String message = _controller.text.trim();
+    if (message.isEmpty) return;
+
+    setState(() {
+      _messages.add({"sender": "Você", "message": message});
+      _controller.clear();
+    });
+
+    String response = await fetchResponse(message);
+
+    setState(() {
+  _messages.add({
+    "sender": "Assistente",
+    "message": response.startsWith("Erro") ? "⚠️ Ocorreu um erro: $response" : response
+  });
+});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Assistente Inteligente'),
-        backgroundColor: Colors.blue.shade700,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Faça uma pergunta ou busca:',
-              style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+      appBar: AppBar(title: const Text("Assistente Virtual")),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final msg = _messages[index];
+                return ListTile(
+                  title: Text(msg["sender"]!, style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(msg["message"]!),
+                );
+              },
             ),
-            const SizedBox(height: 16.0),
-            TextField(
-              controller: _questionController,
-              decoration: const InputDecoration(
-                labelText: 'Digite sua pergunta',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: _getAnswer,
-              child: _isLoading
-                  ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                    )
-                  : const Text('Buscar Resposta'),
-            ),
-            const SizedBox(height: 16.0),
-            if (_result.isNotEmpty)
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Text(
-                    _result,
-                    style: const TextStyle(fontSize: 16.0),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(labelText: "Digite sua mensagem"),
                   ),
                 ),
-              ),
-          ],
-        ),
+                IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
