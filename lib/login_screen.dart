@@ -132,15 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24.0),
               ElevatedButton(
-                /*onPressed: _onLoginPressed,*/
-                onPressed: () {
-              Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => PDVScreen(clientName: 'Emanuela'),
-    ),
-  );// Fecha o pop-up
-            },
+                onPressed: _onLoginPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange.shade400,
                   padding: const EdgeInsets.symmetric(vertical: 15.0),
