@@ -4,6 +4,7 @@ import 'package:carrinhodesupermercado/assistente_screen.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:carrinhodesupermercado/tela_scanner.dart';
 
 Map<String, String> productImages = {
   "123456": "https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png",
@@ -35,7 +36,7 @@ Future<String?> downloadAndSaveImage(String imageUrl, String fileName) async {
 class PDVScreen extends StatefulWidget {
   final String clientName;
 
-  const PDVScreen({Key? key, required this.clientName}) : super(key: key);
+  const PDVScreen({super.key, required this.clientName});
 
   @override
   State<PDVScreen> createState() => _PDVScreenState();
@@ -70,7 +71,7 @@ class _PDVScreenState extends State<PDVScreen> {
     return false; // Bloqueia a ação de voltar
   }
 
- void _scanProduct() {
+ /*void _scanProduct() {
   showDialog(
     context: context,
     builder: (context) {
@@ -116,7 +117,7 @@ class _PDVScreenState extends State<PDVScreen> {
       );
     },
   );
-}
+}*/
 
   void _finalizePurchase() {
     // Verifica se há produtos no carrinho antes de finalizar
@@ -195,7 +196,13 @@ class _PDVScreenState extends State<PDVScreen> {
                   ListTile(
                     leading: const Icon(Icons.qr_code_scanner),
                     title: const Text('Escanear Produto'),
-                    onTap: _scanProduct,
+                    onTap: /*_scanProduct*/() {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>  MyHome()),
+                      );
+                    },
                   ),
                   ListTile(
                     leading: const Icon(Icons.balance),
@@ -204,7 +211,7 @@ class _PDVScreenState extends State<PDVScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const BluetoothScreen()),
+                            builder: (context) =>  BluetoothScreen()),
                       );
                     },
                   ),
