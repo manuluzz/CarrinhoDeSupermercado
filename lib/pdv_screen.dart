@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:carrinhodesupermercado/tela_scanner.dart';
 
+
 Map<String, String> productImages = {
   "123456": "https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png",
   "789012": "https://example.com/produto2.jpg",
@@ -24,11 +25,9 @@ Future<String?> downloadAndSaveImage(String imageUrl, String fileName) async {
 
       return filePath; // Retorna o caminho salvo
     } else {
-      print("Erro ao baixar a imagem: ${response.statusCode}");
       return null;
     }
   } catch (e) {
-    print("Erro na requisição: $e");
     return null;
   }
 }
@@ -119,6 +118,52 @@ class _PDVScreenState extends State<PDVScreen> {
   );
 }*/
 
+void _scanProduct() async {
+  final String? barcode = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => MyHome()),
+  );
+
+  if (barcode != null && barcode.isNotEmpty) {
+    _addProductToCart(barcode);
+  }
+}
+
+void _addProductToCart(String barcode) async {
+  var produtos = {
+    "123456": {
+      "nome": "Arroz 5kg",
+      "preco": 24.99,
+      "imagem": "https://via.placeholder.com/150"
+    },
+    "789012": {
+      "nome": "Feijão 1kg",
+      "preco": 8.99,
+      "imagem": "https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png"
+      
+    },
+  };
+
+  var produto = produtos[barcode];
+
+  if (produto != null) {
+  setState(() {
+    _products.add({
+      'description': produto["nome"],
+      'weight': '1.0 kg',
+      'quantity': 1,
+      'price': (produto["preco"] as num).toDouble(),
+      'imageUrl': produto["imagem"], // Armazena a URL da imagem
+    });
+  });
+} else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Produto não encontrado")),
+    );
+  }
+}
+
+
   void _finalizePurchase() {
     // Verifica se há produtos no carrinho antes de finalizar
     if (_products.isEmpty) {
@@ -196,13 +241,13 @@ class _PDVScreenState extends State<PDVScreen> {
                   ListTile(
                     leading: const Icon(Icons.qr_code_scanner),
                     title: const Text('Escanear Produto'),
-                    onTap: /*_scanProduct*/() {
+                    onTap: _scanProduct/*() {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) =>  MyHome()),
+                            builder: (context) =>  ScannerPage()),
                       );
-                    },
+                    },*/
                   ),
                   ListTile(
                     leading: const Icon(Icons.balance),
@@ -248,14 +293,14 @@ class _PDVScreenState extends State<PDVScreen> {
                     const SizedBox(height: 10.0),
                     Expanded(
                       child: ListView.builder(
-  itemCount: _products.length,
-  itemBuilder: (context, index) {
-    final product = _products[index];
-    return Card(
-      child: ListTile(
-        leading: product['imagePath'] != null
-            ? Image.file(File(product['imagePath']), width: 50, height: 50, fit: BoxFit.cover)
-            : Icon(Icons.image_not_supported, color: Colors.red),
+                      itemCount: _products.length,
+                        itemBuilder: (context, index) {
+                       final product = _products[index];
+                     return Card(
+       child: ListTile(
+         leading: product['imagePath'] != null
+               ? Image.network(product['imageUrl'], width: 50, height: 50, fit: BoxFit.cover)
+              : Icon(Icons.image_not_supported, color: Colors.red),
         title: Text(product['description']),
         subtitle: Text(
           'Peso: ${product['weight']} | Quantidade: ${product['quantity']}\nPreço: R\$ ${product['price'].toStringAsFixed(2)}',
