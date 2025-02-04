@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:carrinhodesupermercado/mobile_scanner.dart';
 import 'package:carrinhodesupermercado/scanner/scanned_barcode_label.dart';
@@ -17,9 +16,10 @@ class BarcodeScannerReturningImage extends StatefulWidget {
 class _BarcodeScannerReturningImageState
     extends State<BarcodeScannerReturningImage> {
   final MobileScannerController controller = MobileScannerController(
-    torchEnabled: true,
-    returnImage: true,
-  );
+  facing: CameraFacing.back,  // Garante que está usando a câmera traseira
+  detectionSpeed: DetectionSpeed.noDuplicates,
+);
+
 
   @override
   Widget build(BuildContext context) {
@@ -85,13 +85,18 @@ class _BarcodeScannerReturningImageState
                 color: Colors.grey,
                 child: Stack(
                   children: [
-                    MobileScanner(
-                      controller: controller,
-                      errorBuilder: (context, error) {
-                        return ScannerErrorWidget(error: error);
-                      },
-                      fit: BoxFit.contain,
-                    ),
+                    FutureBuilder(
+  future: controller.start(), 
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (snapshot.hasError) {
+      return Center(child: Text('Erro: ${snapshot.error}'));
+    }
+    return MobileScanner(controller: controller);
+  },
+),
+
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
