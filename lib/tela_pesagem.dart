@@ -5,6 +5,7 @@ import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:carrinhodesupermercado/pesagem/bluetooth_service.dart';
 import 'package:carrinhodesupermercado/pesagem/ChatPage.dart';
 import 'package:carrinhodesupermercado/pesagem/selectBondedDevicePage.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // import './helpers/LineChart.dart';
 
@@ -26,9 +27,27 @@ class _BluetoothScreen extends State<BluetoothScreen> {
 
   bool _autoAcceptPairingRequests = false;
 
+  Future<void> requestBluetoothPermissions() async {
+  Map<Permission, PermissionStatus> statuses = await [
+    Permission.bluetooth,
+    Permission.bluetoothScan,
+    Permission.bluetoothAdvertise,
+    Permission.bluetoothConnect,
+  ].request();
+
+  if (statuses[Permission.bluetoothConnect]!.isGranted) {
+    print("Permissão BLUETOOTH_CONNECT concedida.");
+  } else {
+    print("Permissão BLUETOOTH_CONNECT negada. O usuário deve concedê-la manualmente.");
+    openAppSettings(); // Abre as configurações do app se a permissão for negada
+  }
+}
+
   @override
   void initState() {
     super.initState();
+
+  requestBluetoothPermissions(); 
 
     // Get current state
     FlutterBluetoothSerial.instance.state.then((state) {

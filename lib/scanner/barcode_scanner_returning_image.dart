@@ -16,10 +16,9 @@ class BarcodeScannerReturningImage extends StatefulWidget {
 class _BarcodeScannerReturningImageState
     extends State<BarcodeScannerReturningImage> {
   final MobileScannerController controller = MobileScannerController(
-  facing: CameraFacing.back,  // Garante que está usando a câmera traseira
-  detectionSpeed: DetectionSpeed.noDuplicates,
-);
-
+    facing: CameraFacing.back, // Garante que está usando a câmera traseira
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -32,50 +31,16 @@ class _BarcodeScannerReturningImageState
               child: StreamBuilder<BarcodeCapture>(
                 stream: controller.barcodes,
                 builder: (context, snapshot) {
-                  final barcode = snapshot.data;
+                  final barcodeData = snapshot.data?.barcodes.firstOrNull;
 
-                  if (barcode == null) {
-                    return const Center(
-                      child: Text(
-                        'Your scanned barcode will appear here!',
-                      ),
-                    );
+                  // Delaying the navigation until after the widget build phase is complete
+                  if (barcodeData != null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      Navigator.pop(context, barcodeData.rawValue);
+                    });
                   }
 
-                  final barcodeImage = barcode.image;
-
-                  if (barcodeImage == null) {
-                    return const Center(
-                      child: Text('No image for this barcode.'),
-                    );
-                  }
-
-                  return Image.memory(
-                    barcodeImage,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Center(
-                        child: Text('Could not decode image bytes. $error'),
-                      );
-                    },
-                    frameBuilder: (
-                      BuildContext context,
-                      Widget child,
-                      int? frame,
-                      bool? wasSynchronouslyLoaded,
-                    ) {
-                      if (wasSynchronouslyLoaded == true || frame != null) {
-                        return Transform.rotate(
-                          angle: 90 * pi / 180,
-                          child: child,
-                        );
-                      }
-
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    },
-                  );
+                  return const Center(child: Text('Escaneie um código de barras'));
                 },
               ),
             ),
@@ -86,17 +51,16 @@ class _BarcodeScannerReturningImageState
                 child: Stack(
                   children: [
                     FutureBuilder(
-  future: controller.start(), 
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
-    } else if (snapshot.hasError) {
-      return Center(child: Text('Erro: ${snapshot.error}'));
-    }
-    return MobileScanner(controller: controller);
-  },
-),
-
+                      future: controller.start(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Erro: ${snapshot.error}'));
+                        }
+                        return MobileScanner(controller: controller);
+                      },
+                    ),
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
@@ -107,9 +71,7 @@ class _BarcodeScannerReturningImageState
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             ToggleFlashlightButton(controller: controller),
-                            StartStopMobileScannerButton(
-                              controller: controller,
-                            ),
+                            StartStopMobileScannerButton(controller: controller),
                             Expanded(
                               child: Center(
                                 child: ScannedBarcodeLabel(

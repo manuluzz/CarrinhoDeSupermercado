@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:carrinhodesupermercado/tela_scanner.dart';
+import 'package:carrinhodesupermercado/scanner/barcode_scanner_returning_image.dart';
 
 
 Map<String, String> productImages = {
@@ -121,7 +122,7 @@ class _PDVScreenState extends State<PDVScreen> {
 void _scanProduct() async {
   final String? barcode = await Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => MyHome()),
+    MaterialPageRoute(builder: (context) => BarcodeScannerReturningImage()),
   );
 
   if (barcode != null && barcode.isNotEmpty) {
@@ -131,7 +132,7 @@ void _scanProduct() async {
 
 void _addProductToCart(String barcode) async {
   var produtos = {
-    "123456": {
+    "1234567891286": {
       "nome": "Arroz 5kg",
       "preco": 24.99,
       "imagem": "https://via.placeholder.com/150"
@@ -147,6 +148,9 @@ void _addProductToCart(String barcode) async {
   var produto = produtos[barcode];
 
   if (produto != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(content: Text("Produto ${produto['nome']} adicionado!")),
+);
   setState(() {
     _products.add({
       'description': produto["nome"],
